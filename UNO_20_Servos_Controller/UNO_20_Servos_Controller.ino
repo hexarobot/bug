@@ -129,6 +129,7 @@ static long SerialNegative = 1;
 static boolean SerialNeedToMove = 0;
 static char SerialCharToSend[50] = ".detratS slennahC 81 ovreSDH";
 static int SerialNbOfCharToSend = 0;  //0= none, 1 = [0], 2 = [1] and so on...
+
 static long servoAngles[18] = {90,130,30,   90,130,30,   90,130,30,   90,50,150,   90,50,150,   90,50,150};
 static int dir = 1;
 
@@ -141,7 +142,7 @@ void ServoMove(int Channel, long PulseHD, long SpeedHD, long Time)
   ServoGroupMoveActivate();
 }
 
-void ServoMove2(int Channel, long angle, long Time)
+void ServoMoveAngle(int Channel, long angle, long Time)
 {
   long pulse = angle * 177.77 + 8000;
   Serial.print("Servo: ");
@@ -164,89 +165,132 @@ void setup()
 void loop()
 {
   #if HDServoMode == 18               //Serial command interpreter is acive. 18-servos mode.
-    if(Serial.available() > 0)
+    if(Serial.available() > 0) 
     {
-      input = Serial.read();
-      if(input == 'p')  {
-        dir = 1;
-      } else if(input == 'l') {
-        dir = -1;
-      } else if(input == 'z') {
-        servoAngles[1] = servoAngles[1] - dir*5;
-        servoAngles[4] = servoAngles[4] - dir*5;
-        servoAngles[7] = servoAngles[7] - dir*5;
-        servoAngles[10] = servoAngles[10] + dir*5;
-        servoAngles[13] = servoAngles[13] + dir*5;
-        servoAngles[16] = servoAngles[16] + dir*5;
-
-        servoAngles[1+1] = servoAngles[1+1] + dir*5;
-        servoAngles[4+1] = servoAngles[4+1] + dir*5;
-        servoAngles[7+1] = servoAngles[7+1] + dir*5;
-        servoAngles[10+1] = servoAngles[10+1] - dir*5;
-        servoAngles[13+1] = servoAngles[13+1] - dir*5;
-        servoAngles[16+1] = servoAngles[16+1] - dir*5;
-      } else if(input == '1') {
-        servoAngles[0] = servoAngles[0] + dir;
-      } else if(input == '2') {
-        servoAngles[1] = servoAngles[1] + dir;
-      } else if(input == '3') {
-        servoAngles[2] = servoAngles[2] + dir;
-      } else if(input == '4') {
-        servoAngles[3] = servoAngles[3] + dir;
-      } else if(input == '5') {
-        servoAngles[4] = servoAngles[4] + dir;
-      } else if(input == '6') {
-        servoAngles[5] = servoAngles[5] + dir;
-      } else if(input == '7') {
-        servoAngles[6] = servoAngles[6] + dir;
-      } else if(input == '8') {
-        servoAngles[7] = servoAngles[7] + dir;
-      } else if(input == '9') {
-        servoAngles[8] = servoAngles[8] + dir;
-      } else if(input == 'q') {
-        servoAngles[9] = servoAngles[9] + dir;
-      } else if(input == 'w') {
-        servoAngles[10] = servoAngles[10] + dir;
-      } else if(input == 'e') {
-        servoAngles[11] = servoAngles[11] + dir;
-      } else if(input == 'r') {
-        servoAngles[12] = servoAngles[12] + dir;
-      } else if(input == 't') {
-        servoAngles[13] = servoAngles[13] + dir;
-      } else if(input == 'y') {
-        servoAngles[14] = servoAngles[14] + dir;
-      } else if(input == 'u') {
-        servoAngles[15] = servoAngles[15] + dir;
-      } else if(input == 'i') {
-        servoAngles[16] = servoAngles[16] + dir;
-      } else if(input == 'o') {
-        servoAngles[17] = servoAngles[17] + dir;
-      }
+      UpDown(Serial.read());
     }
-  for(int i = 0; i < 18 ; i++)                // Wave move circular
-  {
-    ServoMove2(i, servoAngles[i], 100);
-  }
-    // CheckSerial();
-  #elif HDServoMode == 20             //Demo dance is active. 20-servos mode.
-    DemoDance11();
-
+    for(int i = 0; i < 18 ; i++) 
+    { 
+      ServoMoveAngle(i, servoAngles[i], 100);
+    }
+  #elif HDServoMode == 20
+    // for testing
   #endif
 }
 
-void DemoDance11()
+void UpDown(char input) 
 {
-  int timeout = 300;
-  int i = 0;
-  for(i = 0; i < 18 ; i++)                // Wave move circular
+  if(input == 'p')
   {
-    ServoMove2(7, i*10, timeout);
-    delay(timeout+100);
+    dir = 1;
+  } 
+  else if(input == 'l') 
+  {
+    dir = -1;
+  } 
+  else if(input == 'z') 
+  {
+    servoAngles[1] = servoAngles[1] - dir*5;
+    servoAngles[4] = servoAngles[4] - dir*5;
+    servoAngles[7] = servoAngles[7] - dir*5;
+    servoAngles[10] = servoAngles[10] + dir*5;
+    servoAngles[13] = servoAngles[13] + dir*5;
+    servoAngles[16] = servoAngles[16] + dir*5;
+
+    servoAngles[2] = servoAngles[2] + dir*5;
+    servoAngles[5] = servoAngles[5] + dir*5;
+    servoAngles[8] = servoAngles[8] + dir*5;
+    servoAngles[11] = servoAngles[11] - dir*5;
+    servoAngles[14] = servoAngles[14] - dir*5;
+    servoAngles[17] = servoAngles[17] - dir*5;
+  } 
+  else if(input == 'x') 
+  {
+    servoAngles[1] = servoAngles[1] + dir*5;
+    servoAngles[4] = servoAngles[4] + dir*5;
+    servoAngles[7] = servoAngles[7] + dir*5;
+    servoAngles[10] = servoAngles[10] - dir*5;
+    servoAngles[13] = servoAngles[13] - dir*5;
+    servoAngles[16] = servoAngles[16] - dir*5;
+
+    servoAngles[2] = servoAngles[2] - dir*5;
+    servoAngles[5] = servoAngles[5] - dir*5;
+    servoAngles[8] = servoAngles[8] - dir*5;
+    servoAngles[11] = servoAngles[11] + dir*5;
+    servoAngles[14] = servoAngles[14] + dir*5;
+    servoAngles[17] = servoAngles[17] + dir*5;
+  } 
+  else if(input == '1') 
+  {
+    servoAngles[0] = servoAngles[0] + dir;
+  } 
+  else if(input == '2') 
+  {
+    servoAngles[1] = servoAngles[1] + dir;
+  } 
+  else if(input == '3') 
+  {
+    servoAngles[2] = servoAngles[2] + dir;
+  } 
+  else if(input == '4') 
+  {
+    servoAngles[3] = servoAngles[3] + dir;
+  } 
+  else if(input == '5') 
+  {
+    servoAngles[4] = servoAngles[4] + dir;
+  } 
+  else if(input == '6') 
+  {
+    servoAngles[5] = servoAngles[5] + dir;
+  } 
+  else if(input == '7') 
+  {
+    servoAngles[6] = servoAngles[6] + dir;
+  } 
+  else if(input == '8') 
+  {
+    servoAngles[7] = servoAngles[7] + dir;
+  } 
+  else if(input == '9') 
+  {
+    servoAngles[8] = servoAngles[8] + dir;
   }
-  for(i = 18; i > 0 ; i--)                // Wave move circular
+  else if(input == 'q') 
   {
-    ServoMove2(7, i*10, timeout);
-    delay(timeout);
+    servoAngles[9] = servoAngles[9] + dir;
+  } 
+  else if(input == 'w') 
+  {
+    servoAngles[10] = servoAngles[10] + dir;
+  } 
+  else if(input == 'e') 
+  {
+    servoAngles[11] = servoAngles[11] + dir;
+  } 
+  else if(input == 'r') 
+  {
+    servoAngles[12] = servoAngles[12] + dir;
+  } 
+  else if(input == 't') 
+  {
+    servoAngles[13] = servoAngles[13] + dir;
+  } 
+  else if(input == 'y') 
+  {
+    servoAngles[14] = servoAngles[14] + dir;
+  } 
+  else if(input == 'u') 
+  {
+    servoAngles[15] = servoAngles[15] + dir;
+  } 
+  else if(input == 'i') 
+  {
+    servoAngles[16] = servoAngles[16] + dir;
+  } 
+  else if(input == 'o') 
+  {
+    servoAngles[17] = servoAngles[17] + dir;
   }
 }
 
@@ -262,119 +306,6 @@ long CheckChannelRange(long CheckChannel)
   if(CheckChannel >= HDServoMode) return (HDServoMode-1);
   else if(CheckChannel < 0) return 0;
   else return CheckChannel;
-}
-
-void CheckSerial()     //Serial command interpreter.
-{
-  int i = 0;
-
-  if(Serial.available() > 0)
-  {
-    SerialIn = Serial.read();
-    if(SerialIn == '#') 
-    {
-      SerialCommand = 1;
-      SerialNeedToMove = 1;
-      if(!FirstSerialChannelAfterCR) ServoGroupMove(SerialChannel, CheckRange(SerialPulseHD), SerialSpeedHD, SerialTime);
-      FirstSerialChannelAfterCR = 0;
-    }
-    if(SerialIn == 'p') SerialCommand = 2;
-    if(SerialIn == 's') SerialCommand = 3;
-    if(SerialIn == 'T') SerialCommand = 4;
-    if(SerialIn == 'P') 
-    {
-      if(SerialCommand == 9) SerialCommand = 10;   // 'QP'
-      else SerialCommand = 5;                      // 'P'
-    }
-    if(SerialIn == 'S') SerialCommand = 6;
-    if(SerialIn == 'o') {SerialCommand = 7; SerialNeedToMove = 1;}
-    if(SerialIn == 'O') {SerialCommand = 8; SerialNeedToMove = 1;}
-    if(SerialIn == 'Q') SerialCommand = 9; 
-    if(SerialIn == 'I') SerialCommand = 11; 
-    if(SerialIn == 'N') SerialCommand = 12; 
-    if(SerialIn == ' ' || SerialIn == 13)
-    {
-      if(SerialCommand == 1) {SerialChannel = CheckChannelRange(ConvertSerialNumbers()); SerialCommand = 0;}
-      if(SerialCommand == 2) {SerialPulseHD = ConvertSerialNumbers() + SerialPulseOffsetHD[SerialChannel]; SerialCommand = 0;}
-      if(SerialCommand == 3) {SerialSpeedHD = ConvertSerialNumbers(); SerialCommand = 0;}
-      if(SerialCommand == 4) {SerialTime = ConvertSerialNumbers(); SerialCommand = 0;}
-      if(SerialCommand == 5) {SerialPulseHD = ConvertSerialNumbers()*16 + SerialPulseOffsetHD[SerialChannel]; SerialCommand = 0;}
-      if(SerialCommand == 6) {SerialSpeedHD = ConvertSerialNumbers()*16; SerialCommand = 0;}
-      if(SerialCommand == 11) {ServoInvert[SerialChannel] = 1; SerialCommand = 0;}
-      if(SerialCommand == 12) {ServoInvert[SerialChannel] = 0; SerialCommand = 0;}
-      if(SerialCommand == 7) 
-      {
-        SerialPulseOffsetTempHD = ConvertSerialNumbers();
-        SerialPulseHD = ServoPW[SerialChannel] - SerialPulseOffsetHD[SerialChannel] + SerialPulseOffsetTempHD;
-        SerialTime = 10;
-        SerialPulseOffsetHD[SerialChannel] = SerialPulseOffsetTempHD;
-        SerialCommand = 0;
-      }
-      if(SerialCommand == 8) 
-      {
-        SerialPulseOffsetTempHD = ConvertSerialNumbers()*16;
-        SerialPulseHD = ServoPW[SerialChannel] - SerialPulseOffsetHD[SerialChannel] + SerialPulseOffsetTempHD;
-        SerialTime = 10;
-        SerialPulseOffsetHD[SerialChannel] = SerialPulseOffsetTempHD;
-        SerialCommand = 0;
-      }
-      if(SerialIn == 13) 
-      {
-        if(SerialNeedToMove)
-        {
-          ServoGroupMove(SerialChannel, CheckRange(SerialPulseHD), SerialSpeedHD, SerialTime);
-          ServoGroupMoveActivate();
-          FirstSerialChannelAfterCR = 1;
-          SerialCommand = 0;
-          SerialSpeedHD = 0;
-          SerialTime = 0;
-          SerialNeedToMove = 0;
-        }
-        if(SerialCommand == 9)
-        {
-          SerialCharToSend[0] = '.';
-          for(i = 0; i < 20 ; i++)
-          {
-            if(StepsToGo[i] > 0) SerialCharToSend[0] = '+';
-          }
-          SerialNbOfCharToSend = 1;
-          SerialCommand = 0;
-        }
-        if(SerialCommand == 10)
-        {
-          for(i = 0; i < 18 ; i++)
-          {
-            SerialCharToSend[17 - i] = (ServoPW[i] - SerialPulseOffsetHD[i])/160;
-          }
-          SerialNbOfCharToSend = 18;
-          SerialCommand = 0;
-        }
-      }
-    }
-    if((SerialIn >= '0') && (SerialIn <= '9')) {SerialNumbers[SerialNumbersLength] = SerialIn - '0'; SerialNumbersLength++;}
-    if(SerialIn == '-') SerialNegative = -1;
-  }
-}
-
-long ConvertSerialNumbers()         //Converts numbers gotten from serial line to long.
-{
-  int i = 0;
-  
-  long ReturnValue = 0;
-  long Multiplier = 1;
-  if(SerialNumbersLength > 0)
-  {
-    for(i = SerialNumbersLength-1 ; i >= 0 ; i--)
-    {
-      ReturnValue += SerialNumbers[i]*Multiplier;
-      Multiplier *=10;
-    }
-    ReturnValue *= SerialNegative;
-    SerialNumbersLength = 0;
-    SerialNegative = 1;
-    return ReturnValue;
-  }
-  else return 0;
 }
 
 void ServoGroupMove(int Channel, long PulseHD, long SpeedHD, long Time)    //ServoMove used by serial command interpreter
