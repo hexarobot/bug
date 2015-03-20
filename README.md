@@ -10,7 +10,7 @@ tibia to femur: 53mm
 
 Coxa positions TOP:
 
-LEG1 = (-39.4, 78.2)
+LEG1 = (-39.4, 78.2)\n
 LEG2 = (-42.2, 0)
 LEG3 = (-39.4, -78.2)
 LEG4 = (39.4, 78.2)
