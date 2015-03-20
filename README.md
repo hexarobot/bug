@@ -28,7 +28,7 @@
 *   Femur 3x (-1,0), 3x (1,0) (W, E) **FRONT VIEW**
 *   Tibia 6x (0,-1) (S) **FRONT VIEW**
 
-### Calculating tibia tip relative to body center, top view
+### Calculating tibia tip relative to body center, TOP VIEW
 
 *   LEG1 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
 *   LEG2 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
@@ -36,3 +36,5 @@
 *   LEG4 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
 *   LEG5 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
 *   LEG6 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+
+For trigonometry calculations in arduino we will use full angle sin and cos lookup tables

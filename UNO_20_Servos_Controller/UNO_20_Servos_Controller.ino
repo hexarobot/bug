@@ -130,6 +130,50 @@ static boolean SerialNeedToMove = 0;
 static char SerialCharToSend[50] = ".detratS slennahC 81 ovreSDH";
 static int SerialNbOfCharToSend = 0;  //0= none, 1 = [0], 2 = [1] and so on...
 
+// 91 x 2 bytes ==> 182 bytes
+unsigned int isinTable16[] = { 
+  0, 1144, 2287, 3430, 4571, 5712, 6850, 7987, 9121, 10252, 11380, 
+  12505, 13625, 14742, 15854, 16962, 18064, 19161, 20251, 21336, 22414, 
+  23486, 24550, 25607, 26655, 27696, 28729, 29752, 30767, 31772, 32768, 
+
+  33753, 34728, 35693, 36647, 37589, 38521, 39440, 40347, 41243, 42125, 
+  42995, 43851, 44695, 45524, 46340, 47142, 47929, 48702, 49460, 50203, 
+  50930, 51642, 52339, 53019, 53683, 54331, 54962, 55577, 56174, 56755, 
+
+  57318, 57864, 58392, 58902, 59395, 59869, 60325, 60763, 61182, 61583, 
+  61965, 62327, 62671, 62996, 63302, 63588, 63855, 64103, 64331, 64539, 
+  64728, 64897, 65047, 65176, 65286, 65375, 65445, 65495, 65525, 65535, 
+};
+
+int isin(int x)
+{
+  boolean pos = true;  // positive - keeps an eye on the sign.
+  uint8_t idx;
+  // remove next 6 lines for fastestl!
+  if (x < 0) 
+  {
+    x = -x;
+    pos = !pos;  
+  }  
+  if (x >= 360) x %= 360;   
+  if (x > 180) 
+  {
+    idx = x - 180;
+    pos = !pos;
+  }
+  else idx = x;
+  if (idx > 90) idx = 180 - idx;
+  if (pos) return isinTable16[idx]/2 ;
+  return -(isinTable16[idx]/2);
+}
+
+int icos(long x)
+{
+  return isin(x+90);
+}
+
+volatile uint8_t x = 0;
+
 static long servoAngles[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
 
 static long tibia_1[3] = {2,7,13};
@@ -182,7 +226,7 @@ void setup()
   ServoSetup();                       //Initiate timers and misc.
   
   #if HDServoMode == 18
-    // TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
+    TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
   #endif                              // This will disable delay()!
   for(int i = 0; i < 18 ; i++) 
   { 
@@ -194,10 +238,10 @@ void setup()
 
 void loop()
 {
-  #if HDServoMode == 18               //Serial command interpreter is acive. 18-servos mode.
+  #if HDServoMode == 18               //Serial command interpreter is acive. 18-servos mode
     if(Serial.available() > 0) 
     {
-      // OneByOne(Serial.read());
+      OneByOne(Serial.read());
     }
 
     femur1_vertical(down);
