@@ -9,9 +9,11 @@
 
 ### Coxa positions TOP VIEW
 
+<div>LEFT</div>
 *   LEG1 (-39.4, 78.2)
 *   LEG2 (-42.2, 0)
 *   LEG3 (-39.4, -78.2)
+<div>RIGHT</div>
 *   LEG4 (39.4, 78.2)
 *   LEG5 (42.2, 0)
 *   LEG6 (39.4, -78.2)
@@ -30,11 +32,13 @@
 
 ### Calculating tibia tip relative to body center, TOP VIEW
 
+<div>LEFT</div>
 *   LEG1 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
-*   LEG2 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
-*   LEG3 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG2 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α))
+*   LEG3 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α-45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α-45))
+<div>RIGHT</div>
 *   LEG4 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
-*   LEG5 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
-*   LEG6 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG5 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α))
+*   LEG6 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α-45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α-45))
 
-For trigonometry calculations in arduino we will use full angle sin and cos lookup tables
+### For trigonometry calculations in arduino we will use full angle sin and cos lookup tables
