@@ -1,13 +1,13 @@
 ### **Based on** http://www.lamja.com/?p=504
 
-### Design scaled from http://www.thingiverse.com/thing:5669, for using with 9, servos
+### Design scaled from http://www.thingiverse.com/thing:5669 for using with 9g servos
 
 ### Legs:
 
 *   Tibia to leg end: 90mm
 *   Tibia to femur: 53mm
 
-### Coxa positions TOP
+### Coxa positions TOP VIEW
 
 *   LEG1 (-39.4, 78.2)
 *   LEG2 (-42.2, 0)
@@ -30,9 +30,9 @@
 
 ### Calculating tibia tip relative to body center, top view
 
-*   LEG1 = ((53_cos(β) + 90_cos(β+γ) + 12.8) * cos(α+45), (53_cos(β) + 90_cos(β+γ) + 12.8) * sin(α+45))
-*   LEG2 = ((53_cos(β) + 90_cos(β+γ) + 12.8) * cos(α+45), (53_cos(β) + 90_cos(β+γ) + 12.8) * sin(α+45))
-*   LEG3 = ((53_cos(β) + 90_cos(β+γ) + 12.8) * cos(α+45), (53_cos(β) + 90_cos(β+γ) + 12.8) * sin(α+45))
-*   LEG4 = ((53_cos(β) + 90_cos(β+γ) + 12.8) * cos(α+45), (53_cos(β) + 90_cos(β+γ) + 12.8) * sin(α+45))
-*   LEG5 = ((53_cos(β) + 90_cos(β+γ) + 12.8) * cos(α+45), (53_cos(β) + 90_cos(β+γ) + 12.8) * sin(α+45))
-*   LEG6 = ((53_cos(β) + 90_cos(β+γ) + 12.8) * cos(α+45), (53_cos(β) + 90_cos(β+γ) + 12.8) * sin(α+45))
+*   LEG1 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG2 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG3 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG4 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG5 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
+*   LEG6 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α+45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α+45))
