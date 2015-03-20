@@ -130,14 +130,32 @@ static boolean SerialNeedToMove = 0;
 static char SerialCharToSend[50] = ".detratS slennahC 81 ovreSDH";
 static int SerialNbOfCharToSend = 0;  //0= none, 1 = [0], 2 = [1] and so on...
 
-static long servoAngles[18] = {90,130,30,   90,130,30,   90,130,30,   90,50,150,   90,50,150,   90,50,150};
+static long servoAngles[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
 
-static long leg_set_1[3] = {1,7,13};
-static long leg_set_1_dir[3] = {1,1,-1};
-static long leg_set_2[3] = {4,10,16};
-static long leg_set_2_dir[3] = {-1,-1,1};
+static long tibia_1[3] = {2,7,13};
+static long tibia_1_dir[3] = {1,1,-1};
+
+static long tibia_2[3] = {4,10,16};
+static long tibia_2_dir[3] = {1,-1,-1};
+
+static long femur_1[3] = {1,7,13};
+static long femur_1_dir[3] = {1,1,-1};
+
+static long femur_2[3] = {4,10,16};
+static long femur_2_dir[3] = {1,-1,-1};
+
+static long coxa_1[3] = {0,6,12};
+static long coxa_1_dir[3] = {1,1,-1};
+
+static long coxa_2[3] = {3,9,15};
+static long coxa_2_dir[3] = {1,-1,-1};
 
 static int dir = 1;
+static int up = 1;
+static int down = -1;
+static int forward = 1;
+static int back = -1;
+static int delayTime = 200;
 
 void ServoMove(int Channel, long PulseHD, long SpeedHD, long Time)
 {
@@ -164,12 +182,14 @@ void setup()
   ServoSetup();                       //Initiate timers and misc.
   
   #if HDServoMode == 18
-    TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
+    // TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
   #endif                              // This will disable delay()!
   for(int i = 0; i < 18 ; i++) 
   { 
     ServoMoveAngle(i, servoAngles[i], 500);
   }
+  femur1_vertical(up);
+  coxa1_horizontal(back);
 }
 
 void loop()
@@ -177,14 +197,40 @@ void loop()
   #if HDServoMode == 18               //Serial command interpreter is acive. 18-servos mode.
     if(Serial.available() > 0) 
     {
-      UpDown(Serial.read());
+      // OneByOne(Serial.read());
     }
+
+    femur1_vertical(down);
+    femur2_vertical(up);
+    delay(delayTime);
+
+    coxa1_horizontal(forward);
+    coxa2_horizontal(back);
+    delay(delayTime);
+
+    femur1_vertical(up);
+    femur2_vertical(down);
+    delay(delayTime);
+
+    coxa1_horizontal(back);
+    coxa2_horizontal(forward);
+    delay(delayTime);
+
   #elif HDServoMode == 20
     // for testing
   #endif
 }
 
 void UpDown(char input) 
+{
+  if(input == 'c') 
+  {
+    dir = -1;
+    // set1_vertical();
+  } 
+}
+
+void OneByOne(char input) 
 {
   if(input == 'p')
   {
@@ -193,30 +239,6 @@ void UpDown(char input)
   else if(input == 'l') 
   {
     dir = -1;
-  } 
-  else if(input == 'c') 
-  {
-    set1_vertical();
-  } 
-  else if(input == 'c') 
-  {
-    set2_vertical();
-  } 
-  else if(input == 'x') 
-  {
-    servoAngles[1] = servoAngles[1] + dir*5;
-    servoAngles[4] = servoAngles[4] + dir*5;
-    servoAngles[7] = servoAngles[7] + dir*5;
-    servoAngles[10] = servoAngles[10] - dir*5;
-    servoAngles[13] = servoAngles[13] - dir*5;
-    servoAngles[16] = servoAngles[16] - dir*5;
-
-    servoAngles[2] = servoAngles[2] - dir*5;
-    servoAngles[5] = servoAngles[5] - dir*5;
-    servoAngles[8] = servoAngles[8] - dir*5;
-    servoAngles[11] = servoAngles[11] + dir*5;
-    servoAngles[14] = servoAngles[14] + dir*5;
-    servoAngles[17] = servoAngles[17] + dir*5;
   } 
   else if(input == '1') 
   {
@@ -290,23 +312,45 @@ void UpDown(char input)
   {
     servoAngles[17] = servoAngles[17] + dir;
   }
+  for(int i = 0; i < 18 ; i++) 
+  { 
+    ServoMoveAngle(i, servoAngles[i], 100);
+  }
 }
 
-void set1_vertical()
+void femur1_vertical(int direction)
 {
     for(int i = 0; i < 3 ; i++)
     {
-      servoAngles[leg_set_1[i]] = servoAngles[leg_set_1[i]] + leg_set_1_dir[i]*dir*30;
-      ServoMoveAngle(leg_set_1[i], servoAngles[leg_set_1[i]], 500);
+      servoAngles[femur_1[i]] = servoAngles[femur_1[i]] + femur_1_dir[i]*direction*15;
+      ServoMoveAngle(femur_1[i], servoAngles[femur_1[i]], delayTime);
     }
 }
 
-void set2_vertical()
+void femur2_vertical(int direction)
 {
     for(int i = 0; i < 3 ; i++)
     {
-      servoAngles[leg_set_2[i]] = servoAngles[leg_set_2[i]] + leg_set_2_dir[i]*dir*30;
-      ServoMoveAngle(leg_set_2[i], servoAngles[leg_set_2[i]], 500);
+      servoAngles[femur_2[i]] = servoAngles[femur_2[i]] + femur_2_dir[i]*direction*15;
+      ServoMoveAngle(femur_2[i], servoAngles[femur_2[i]], delayTime);
+    }
+}
+
+void coxa1_horizontal(int direction)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[coxa_1[i]] = servoAngles[coxa_1[i]] + coxa_1_dir[i]*direction*15;
+      ServoMoveAngle(coxa_1[i], servoAngles[coxa_1[i]], delayTime);
+    }
+}
+
+void coxa2_horizontal(int direction)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[coxa_2[i]] = servoAngles[coxa_2[i]] + coxa_2_dir[i]*direction*15;
+      ServoMoveAngle(coxa_2[i], servoAngles[coxa_2[i]], delayTime);
     }
 }
 
