@@ -19,7 +19,7 @@
 *   LEG5 (42.2, 0)
 *   LEG6 (39.4, -78.2)
 
-### Servo angles&nbsp;
+### Servo angles
 
 *   α - coxa
 *   β - femur
@@ -44,3 +44,6 @@
 *   LEG6 = ((53*cos(β) + 90*cos(β+γ) + 12.8) * cos(α-45), (53*cos(β) + 90*cos(β+γ) + 12.8) * sin(α-45))
 
 ### For trigonometry calculations in arduino we will use full angle sin and cos lookup tables based on http://forum.arduino.cc/index.php?topic=69723.0
+
+Some more links: 
+http://lab.polygonal.de/?p=205
