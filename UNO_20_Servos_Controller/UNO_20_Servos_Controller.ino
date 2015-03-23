@@ -81,7 +81,7 @@
 //
 // #deefine SerialInterfaceSpeed 115200      - Serial interface Speed
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 #define HDServoMode 18
 #define SerialInterfaceSpeed 115200    // Serial interface Speed
@@ -130,8 +130,96 @@ static boolean SerialNeedToMove = 0;
 static char SerialCharToSend[50] = ".detratS slennahC 81 ovreSDH";
 static int SerialNbOfCharToSend = 0;  //0= none, 1 = [0], 2 = [1] and so on...
 
-// 91 x 2 bytes ==> 182 bytes
-unsigned int isinTable16[] = { 
+
+
+// LUT
+const uint16_t a_sin[1000] PROGMEM = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+  2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 
+  5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 
+  7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+  8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 10, 
+  10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 
+  11, 11, 11, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 
+  13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14, 
+  14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 
+  15, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 17, 
+  17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 
+  18, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 20, 20, 20, 20, 20, 20, 20, 
+  20, 20, 20, 20, 20, 20, 20, 20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 
+  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23, 23, 
+  23, 23, 23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 25, 
+  25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+  26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28, 28, 28, 28, 28, 
+  28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 
+  30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 
+  31, 31, 31, 31, 31, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 33, 33, 33, 33, 33, 
+  33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 35, 
+  35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 
+  36, 36, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 38, 38, 38, 38, 38, 38, 38, 38, 38, 
+  38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40, 
+  40, 40, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 42, 42, 42, 42, 42, 
+  42, 42, 42, 42, 42, 42, 42, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 44, 44, 44, 44, 44, 
+  44, 44, 44, 44, 44, 44, 44, 44, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 46, 46, 46, 46, 46, 
+  46, 46, 46, 46, 46, 46, 46, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 48, 48, 48, 48, 48, 48, 
+  48, 48, 48, 48, 48, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 50, 50, 50, 50, 50, 50, 50, 50, 
+  50, 50, 50, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 53, 
+  53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 55, 55, 55, 55, 55, 
+  55, 55, 55, 55, 55, 56, 56, 56, 56, 56, 56, 56, 56, 56, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 58, 
+  58, 58, 58, 58, 58, 58, 58, 58, 59, 59, 59, 59, 59, 59, 59, 59, 59, 60, 60, 60, 60, 60, 60, 60, 60, 
+  61, 61, 61, 61, 61, 61, 61, 61, 62, 62, 62, 62, 62, 62, 62, 62, 62, 63, 63, 63, 63, 63, 63, 63, 64, 
+  64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66, 67, 67, 67, 67, 
+  67, 67, 67, 68, 68, 68, 68, 68, 68, 69, 69, 69, 69, 69, 69, 70, 70, 70, 70, 70, 70, 71, 71, 71, 71, 
+  71, 71, 72, 72, 72, 72, 72, 73, 73, 73, 73, 73, 74, 74, 74, 74, 75, 75, 75, 75, 75, 76, 76, 76, 76, 
+  77, 77, 77, 77, 78, 78, 78, 79, 79, 79, 80, 80, 80, 81, 81, 81, 82, 82, 83, 83, 84, 84, 85, 86, 87
+};
+
+const uint16_t a_cos[1000] PROGMEM = {
+  90, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 89, 88, 88, 88, 88, 88, 88, 88, 
+  88, 88, 88, 88, 88, 88, 88, 88, 88, 88, 87, 87, 87, 87, 87, 87, 87, 87, 87, 87, 87, 87, 87, 87, 87, 
+  87, 87, 87, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 85, 85, 85, 85, 85, 
+  85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 84, 
+  84, 84, 84, 84, 84, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 82, 82, 82, 
+  82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 
+  81, 81, 81, 81, 81, 81, 81, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 79, 
+  79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 79, 78, 78, 78, 78, 78, 78, 78, 78, 78, 
+  78, 78, 78, 78, 78, 78, 78, 78, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 
+  76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 75, 75, 75, 75, 75, 75, 75, 75, 
+  75, 75, 75, 75, 75, 75, 75, 75, 75, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 
+  74, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 72, 72, 72, 72, 72, 72, 72, 
+  72, 72, 72, 72, 72, 72, 72, 72, 72, 72, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 
+  71, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 69, 69, 69, 69, 69, 69, 69, 
+  69, 69, 69, 69, 69, 69, 69, 69, 69, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 
+  67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 66, 66, 66, 66, 66, 66, 66, 66, 66, 
+  66, 66, 66, 66, 66, 66, 66, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 64, 64, 
+  64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 
+  63, 63, 63, 63, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 61, 61, 61, 61, 61, 
+  61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 
+  60, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 58, 58, 58, 58, 58, 58, 58, 58, 58, 
+  58, 58, 58, 58, 58, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 56, 56, 56, 56, 56, 
+  56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 54, 
+  54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 
+  53, 53, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 51, 51, 51, 51, 51, 51, 51, 51, 51, 
+  51, 51, 51, 51, 51, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 
+  49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 47, 47, 47, 47, 47, 
+  47, 47, 47, 47, 47, 47, 47, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 45, 45, 45, 45, 45, 
+  45, 45, 45, 45, 45, 45, 45, 45, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 43, 43, 43, 43, 43, 
+  43, 43, 43, 43, 43, 43, 43, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 41, 41, 41, 41, 41, 41, 
+  41, 41, 41, 41, 41, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 39, 39, 39, 39, 39, 39, 39, 39, 
+  39, 39, 39, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 36, 
+  36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 34, 34, 34, 34, 34, 
+  34, 34, 34, 34, 34, 33, 33, 33, 33, 33, 33, 33, 33, 33, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 31, 
+  31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 29, 29, 29, 29, 
+  28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 27, 27, 26, 26, 26, 26, 26, 26, 26, 25, 
+  25, 25, 25, 25, 25, 25, 25, 24, 24, 24, 24, 24, 24, 24, 23, 23, 23, 23, 23, 23, 23, 22, 22, 22, 22, 
+  22, 22, 22, 21, 21, 21, 21, 21, 21, 20, 20, 20, 20, 20, 20, 19, 19, 19, 19, 19, 19, 18, 18, 18, 18, 
+  18, 18, 17, 17, 17, 17, 17, 16, 16, 16, 16, 16, 15, 15, 15, 15, 14, 14, 14, 14, 14, 13, 13, 13, 13, 
+  12, 12, 12, 12, 11, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 6, 6, 5, 5, 4, 3, 2
+};
+
+uint16_t sinTable16[] = { 
   0, 1144, 2287, 3430, 4571, 5712, 6850, 7987, 9121, 10252, 11380, 
   12505, 13625, 14742, 15854, 16962, 18064, 19161, 20251, 21336, 22414, 
   23486, 24550, 25607, 26655, 27696, 28729, 29752, 30767, 31772, 32768, 
@@ -145,7 +233,9 @@ unsigned int isinTable16[] = {
   64728, 64897, 65047, 65176, 65286, 65375, 65445, 65495, 65525, 65535, 
 };
 
-int isin(int x)
+
+// Fast trigonometry
+int fast_sin(int x)
 {
   boolean pos = true;  // positive - keeps an eye on the sign.
   uint8_t idx;
@@ -163,43 +253,108 @@ int isin(int x)
   }
   else idx = x;
   if (idx > 90) idx = 180 - idx;
-  if (pos) return isinTable16[idx]/2 ;
-  return -(isinTable16[idx]/2);
-}
+  if (pos) return sinTable16[idx]/2 ;
+  return -(sinTable16[idx]/2);
+};
 
-int icos(long x)
+int fast_cos(long x)
 {
-  return isin(x+90);
+  return fast_sin(x+90);
+};
+
+int fast_atan2(int opp, int adj) {
+  float hypt = sqrt(adj * adj + opp * opp);
+  unsigned int idx = adj / hypt * 1000;
+  int res = pgm_read_word_near(a_cos + idx);
+  if(opp < 0) {
+    res = -res;
+  }
+  return res;
 }
 
-volatile uint8_t x = 0;
+// leg and body measurements in mm
 
+static const uint8_t coxa_length = 13;
+static const uint8_t femur_length = 53;
+static const uint8_t tibia_length = 90;
+static const uint16_t coxa_length_sq = coxa_length*coxa_length;
+static const uint16_t femur_length_sq = femur_length*femur_length;
+static const uint16_t tibia_length_sq = tibia_length*tibia_length;
+
+// Servo and servo angle arrays
 static long servoAngles[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
+static const long servoZeroAngles[18] = {101,86,66,   93,86,69,   108,71,70,   102,91,122,   92,86,124,   90,80,124};
+static const long coxaAngOffset[6] = {-225,-180,-135,-45,0,45};
 
-static long tibia_1[3] = {2,7,13};
-static long tibia_1_dir[3] = {1,1,-1};
+static long tibia1[3] = {2,7,13};
+static long tibia1dir[3] = {1,1,-1};
 
-static long tibia_2[3] = {4,10,16};
-static long tibia_2_dir[3] = {1,-1,-1};
+static long tibia2[3] = {4,10,16};
+static long tibia2dir[3] = {1,-1,-1};
 
-static long femur_1[3] = {1,7,13};
-static long femur_1_dir[3] = {1,1,-1};
+static long femur1[3] = {1,7,13};
+static long femur1dir[3] = {1,1,-1};
 
-static long femur_2[3] = {4,10,16};
-static long femur_2_dir[3] = {1,-1,-1};
+static long femur2[3] = {4,10,16};
+static long femur2dir[3] = {1,-1,-1};
 
-static long coxa_1[3] = {0,6,12};
-static long coxa_1_dir[3] = {1,1,-1};
+static long coxa1[3] = {0,6,12};
+static long coxa1dir[3] = {1,1,-1};
 
-static long coxa_2[3] = {3,9,15};
-static long coxa_2_dir[3] = {1,-1,-1};
+static long coxa2[3] = {3,9,15};
+static long coxa2dir[3] = {1,-1,-1};
 
+
+// TEST
 static int dir = 1;
+static int dist = 15;
 static int up = 1;
 static int down = -1;
 static int forward = 1;
 static int back = -1;
-static int delayTime = 200;
+static int delayTime = 250;
+
+
+// Startpositions for legs
+static double pos_x[6] = {0,0,0,0,0,0};
+static double pos_y[6] = {0,0,0,0,0,0};
+static double pos_z[6] = {-10,-10,-10,-10,-10,-10};
+
+// Formulas
+
+float leg_length(int x, int y) {
+  return sqrt(x*x+y*y);
+}
+
+float hf(float leg_length, int z) {
+  return sqrt((leg_length-coxa_length)*(leg_length-coxa_length)+z*z);
+}
+
+int a1(float leg_length, int z) {
+  return fast_atan2(leg_length-coxa_length, z);
+}
+
+int a2(float hf) {
+  unsigned int idx = (tibia_length_sq - coxa_length_sq - hf * hf * 1000/ -2 * femur_length * hf);
+  return pgm_read_word_near(a_cos + idx);
+}
+
+int femur_angle(int a1, int a2) {
+  return a1+a2;
+}
+
+int b1(float hf) {
+  unsigned int idx = (hf * hf - tibia_length_sq - femur_length_sq * 1000/ -2 * femur_length * tibia_length);
+  return pgm_read_word_near(a_cos + idx);
+}
+
+int tibia_angle(int b1) {
+  return 90-b1;
+}
+
+int coxa_angle(int x, int y) {
+  return fast_atan2(y, x);
+}
 
 void ServoMove(int Channel, long PulseHD, long SpeedHD, long Time)
 {
@@ -226,14 +381,39 @@ void setup()
   ServoSetup();                       //Initiate timers and misc.
   
   #if HDServoMode == 18
-    TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
-  #endif                              // This will disable delay()!
+    // TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
+  #endif                              
   for(int i = 0; i < 18 ; i++) 
   { 
-    ServoMoveAngle(i, servoAngles[i], 500);
+    servoAngles[i] = servoZeroAngles[i];
+    ServoMoveAngle(i, servoAngles[i], 300);
   }
-  femur1_vertical(up);
-  coxa1_horizontal(back);
+
+    for(int i = 0; i < 16 ; i++) {
+      int coxaAng = servoAngles[i*3] - servoZeroAngles[i*3];
+      int femurAng = servoAngles[i*3+1] - servoZeroAngles[i*3+1];
+      int tibiaAng = 0;
+
+
+      // int result = copysign(1.0, pos_x[i]);
+
+      Serial.print("c, f, t for i=");
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.print(coxaAng);
+      Serial.print(", ");
+      Serial.print(femurAng);
+      Serial.print(", ");
+      Serial.print(tibiaAng);
+      Serial.print(", pos_x: ");
+      Serial.print(pos_x[i]);
+      Serial.print(", pos_y: ");
+      Serial.println(pos_y[i]);
+
+    }
+  // delay(2000);
+  // moveCoxa2(back, dist);
+  // delay(delayTime);
 }
 
 void loop()
@@ -244,34 +424,80 @@ void loop()
       OneByOne(Serial.read());
     }
 
-    femur1_vertical(down);
-    femur2_vertical(up);
-    delay(delayTime);
 
-    coxa1_horizontal(forward);
-    coxa2_horizontal(back);
-    delay(delayTime);
+    // moveFemur1(up, dist);
+    // moveCoxa1(back, dist);
+    // moveCoxa2(forward, dist);
+    // delay(delayTime);
 
-    femur1_vertical(up);
-    femur2_vertical(down);
-    delay(delayTime);
+    // moveFemur1(down, dist);
+    // delay(delayTime);
 
-    coxa1_horizontal(back);
-    coxa2_horizontal(forward);
-    delay(delayTime);
+    // moveFemur2(up, dist);
+    // moveCoxa2(back, dist);
+    // moveCoxa1(forward, dist);
+    // delay(delayTime);
+
+    // moveFemur2(down, dist);
+    // delay(delayTime);
 
   #elif HDServoMode == 20
     // for testing
   #endif
 }
 
-void UpDown(char input) 
+void moveFemur1(int direction, int distance)
 {
-  if(input == 'c') 
-  {
-    dir = -1;
-    // set1_vertical();
-  } 
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[femur1[i]] = servoAngles[femur1[i]] + femur1dir[i]*direction*distance;
+      ServoMoveAngle(femur1[i], servoAngles[femur1[i]], delayTime);
+    }
+}
+
+void moveFemur2(int direction, int distance)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[femur2[i]] = servoAngles[femur2[i]] + femur2dir[i]*direction*distance;
+      ServoMoveAngle(femur2[i], servoAngles[femur2[i]], delayTime);
+    }
+}
+
+void moveCoxa1(int direction, int distance)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[coxa1[i]] = servoAngles[coxa1[i]] + coxa1dir[i]*direction*distance;
+      ServoMoveAngle(coxa1[i], servoAngles[coxa1[i]], delayTime);
+    }
+}
+
+void moveCoxa2(int direction, int distance)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[coxa2[i]] = servoAngles[coxa2[i]] + coxa2dir[i]*direction*distance;
+      ServoMoveAngle(coxa2[i], servoAngles[coxa2[i]], delayTime);
+    }
+}
+
+void moveTibia1(int direction, int distance)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[coxa1[i]] = servoAngles[coxa1[i]] + coxa1dir[i]*direction*distance;
+      ServoMoveAngle(coxa1[i], servoAngles[coxa1[i]], delayTime);
+    }
+}
+
+void moveTibia2(int direction, int distance)
+{
+    for(int i = 0; i < 3 ; i++)
+    {
+      servoAngles[coxa2[i]] = servoAngles[coxa2[i]] + coxa2dir[i]*direction*distance;
+      ServoMoveAngle(coxa2[i], servoAngles[coxa2[i]], delayTime);
+    }
 }
 
 void OneByOne(char input) 
@@ -362,41 +588,6 @@ void OneByOne(char input)
   }
 }
 
-void femur1_vertical(int direction)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[femur_1[i]] = servoAngles[femur_1[i]] + femur_1_dir[i]*direction*15;
-      ServoMoveAngle(femur_1[i], servoAngles[femur_1[i]], delayTime);
-    }
-}
-
-void femur2_vertical(int direction)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[femur_2[i]] = servoAngles[femur_2[i]] + femur_2_dir[i]*direction*15;
-      ServoMoveAngle(femur_2[i], servoAngles[femur_2[i]], delayTime);
-    }
-}
-
-void coxa1_horizontal(int direction)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[coxa_1[i]] = servoAngles[coxa_1[i]] + coxa_1_dir[i]*direction*15;
-      ServoMoveAngle(coxa_1[i], servoAngles[coxa_1[i]], delayTime);
-    }
-}
-
-void coxa2_horizontal(int direction)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[coxa_2[i]] = servoAngles[coxa_2[i]] + coxa_2_dir[i]*direction*15;
-      ServoMoveAngle(coxa_2[i], servoAngles[coxa_2[i]], delayTime);
-    }
-}
 
 long CheckRange(long PulseHDValue)
 {
