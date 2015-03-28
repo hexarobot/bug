@@ -83,6 +83,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
+#include <math.h>
 #define HDServoMode 18
 #define SerialInterfaceSpeed 115200    // Serial interface Speed
 
@@ -130,10 +131,11 @@ static boolean SerialNeedToMove = 0;
 static char SerialCharToSend[50] = ".detratS slennahC 81 ovreSDH";
 static int SerialNbOfCharToSend = 0;  //0= none, 1 = [0], 2 = [1] and so on...
 
-
+volatile int test = 0;
 
 // LUT
-const uint16_t a_sin[1000] PROGMEM = {
+const uint16_t a_sin[1000] PROGMEM = 
+{
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
   2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 
@@ -282,9 +284,9 @@ static const uint16_t femur_length_sq = femur_length*femur_length;
 static const uint16_t tibia_length_sq = tibia_length*tibia_length;
 
 // Servo and servo angle arrays
-static long servoAngles[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
-static const long servoZeroAngles[18] = {101,86,66,   93,86,69,   108,71,70,   102,91,122,   92,86,124,   90,80,124};
-static const long coxaAngOffset[6] = {-225,-180,-135,-45,0,45};
+static double servoAngles[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
+static const double servoZeroAngles[18] = {101,86,66,   93,86,69,   108,71,70,   102,91,122,   92,86,124,   90,80,124};
+static const double coxaAngOffset[6] = {-225,-180,-135,-45,0,45};
 
 static long tibia1[3] = {2,7,13};
 static long tibia1dir[3] = {1,1,-1};
@@ -307,54 +309,71 @@ static long coxa2dir[3] = {1,-1,-1};
 
 // TEST
 static int dir = 1;
-static int dist = 15;
 static int up = 1;
 static int down = -1;
 static int forward = 1;
 static int back = -1;
-static int delayTime = 250;
+static int stepTime = 250;
 
 
 // Startpositions for legs
-static double pos_x[6] = {0,0,0,0,0,0};
-static double pos_y[6] = {0,0,0,0,0,0};
-static double pos_z[6] = {-10,-10,-10,-10,-10,-10};
+static int pos_x[6] = {-50,-70,-50,50,70,50};
+static int pos_y[6] = {38,0,-38,-38,0,38};
+static int pos_z[6] = {-10,-10,-10,-10,-10,-10};
+
+// movement patterns: walk - 4 iterations times 2 sides
+
+static int walk_left_side_setup[6] = {0, 20, 10, 0, 0, -10};
+
+static int walk_x[4][2] = {{0,0},{0,0},{0,0},{0,0}};
+static int walk_y[4][2] = {{20,-20},{0,0},{-20,20},{0,0}};
+static int walk_z[4][2] = {{10,0},{-10,0},{0,10},{0,-10}};
+
 
 // Formulas
-
-float leg_length(int x, int y) {
+double leg_length(int x, int y) {
   return sqrt(x*x+y*y);
 }
 
-float hf(float leg_length, int z) {
+double hf(double leg_length, int z) {
   return sqrt((leg_length-coxa_length)*(leg_length-coxa_length)+z*z);
 }
 
-int a1(float leg_length, int z) {
-  return fast_atan2(leg_length-coxa_length, z);
+double a1(double leg_length, int z) {
+  return atan2(leg_length-coxa_length, z);
+  // return fast_atan2(leg_length-coxa_length, z);
 }
 
-int a2(float hf) {
-  unsigned int idx = (tibia_length_sq - coxa_length_sq - hf * hf * 1000/ -2 * femur_length * hf);
-  return pgm_read_word_near(a_cos + idx);
+double a2(double hf) {
+  double idx = (tibia_length_sq - coxa_length_sq - hf * hf/ -2.0 * femur_length * hf);
+  return acos(idx);
+  // unsigned int idx = (tibia_length_sq - coxa_length_sq - hf * hf * 1000/ -2 * femur_length * hf);
+  // return pgm_read_word_near(a_cos + idx);
 }
 
-int femur_angle(int a1, int a2) {
+double femur_angle(double a1, double a2) {
   return a1+a2;
 }
 
-int b1(float hf) {
-  unsigned int idx = (hf * hf - tibia_length_sq - femur_length_sq * 1000/ -2 * femur_length * tibia_length);
-  return pgm_read_word_near(a_cos + idx);
+double b1(double hf) {
+  double idx = (hf * hf - tibia_length_sq - femur_length_sq/ -2.0 * femur_length * tibia_length);
+  // unsigned int idx = (hf * hf - tibia_length_sq - femur_length_sq * 1000/ -2 * femur_length * tibia_length);
+  return acos(idx);
+  // return pgm_read_word_near(a_cos + idx);
 }
 
-int tibia_angle(int b1) {
+double tibia_angle(double b1) {
   return 90-b1;
 }
 
-int coxa_angle(int x, int y) {
-  return fast_atan2(y, x);
+double coxa_angle(double y, double x) {
+  return atan2(y, x);
+  // return fast_atan2(y, x);
 }
+
+// interpolation
+// TODO later
+
 
 void ServoMove(int Channel, long PulseHD, long SpeedHD, long Time)
 {
@@ -365,7 +384,7 @@ void ServoMove(int Channel, long PulseHD, long SpeedHD, long Time)
   ServoGroupMoveActivate();
 }
 
-void ServoMoveAngle(int Channel, long angle, long Time)
+void ServoMoveAngle(int Channel, double angle, long Time)
 {
   long pulse = angle * 177.77 + 8000;
   Serial.print("Servo: ");
@@ -376,128 +395,91 @@ void ServoMoveAngle(int Channel, long angle, long Time)
   ServoGroupMoveActivate();
 }
 
+void moveAllServos(long time)
+{
+  for(int i = 0; i < 18 ; i++) 
+  {
+    ServoMoveAngle(i, servoAngles[i], time);
+  }
+  delay(time);
+}
+
 void setup()
 {
   ServoSetup();                       //Initiate timers and misc.
-  
-  #if HDServoMode == 18
-    // TIMSK0 = 0;                       // Disable timer 0. This can reduse jitter some more. But it's used for delay() funtions.
-  #endif                              
+
   for(int i = 0; i < 18 ; i++) 
   { 
     servoAngles[i] = servoZeroAngles[i];
-    ServoMoveAngle(i, servoAngles[i], 300);
   }
+  moveAllServos(500);
+  delay(1000);
 
-    for(int i = 0; i < 16 ; i++) {
-      int coxaAng = servoAngles[i*3] - servoZeroAngles[i*3];
-      int femurAng = servoAngles[i*3+1] - servoZeroAngles[i*3+1];
-      int tibiaAng = 0;
+  for(int i = 0; i < 3 ; i++) 
+  {
+    pos_x[i*2+1] = pos_x[i*2+1] + walk_left_side_setup[i*3];
+    pos_y[i*2+1] = pos_y[i*2+1] + walk_left_side_setup[i*3+1];
+    pos_z[i*2+1] = pos_z[i*2+1] + walk_left_side_setup[i*3+2];
+    double leg_l = leg_length(pos_x[i*2+1], pos_y[i*2+1]);
+    double h_f = hf(leg_l, pos_z[i*2+1]);
+    double a_1 = a1(leg_l, pos_z[i*2+1]);
+    double a_2 = a2(h_f);
+    double f_ang = 90.0-(a_1+a_2);
+    double b_1 = b1(h_f);
+    double t_ang = 90.0-b_1;
+    double c_ang = atan(1.0*pos_x[i*2+1]/pos_y[i*2+1]);
+    servoAngles[(i+1)*6] = c_ang;
+    servoAngles[(i+1)*6+1] = f_ang;
+    servoAngles[(i+1)*6+2] = t_ang;
 
-
-      // int result = copysign(1.0, pos_x[i]);
-
-      Serial.print("c, f, t for i=");
-      Serial.print(i);
-      Serial.print(": ");
-      Serial.print(coxaAng);
-      Serial.print(", ");
-      Serial.print(femurAng);
-      Serial.print(", ");
-      Serial.print(tibiaAng);
-      Serial.print(", pos_x: ");
-      Serial.print(pos_x[i]);
-      Serial.print(", pos_y: ");
-      Serial.println(pos_y[i]);
-
-    }
-  // delay(2000);
-  // moveCoxa2(back, dist);
-  // delay(delayTime);
+  }
+  moveAllServos(stepTime);
 }
 
 void loop()
 {
-  #if HDServoMode == 18               //Serial command interpreter is acive. 18-servos mode
-    if(Serial.available() > 0) 
+  // if(Serial.available() > 0) 
+  // {
+  //   OneByOne(Serial.read());
+  // }
+  for(int i = 0; i < 4 ; i++) 
+  {
+    for(int j = 0; j < 3 ; j++) 
     {
-      OneByOne(Serial.read());
+      // leg set 1
+      pos_x[j*2] = pos_x[j*2] + walk_x[i][0];
+      pos_y[j*2] = pos_y[j*2] + walk_y[i][0];
+      pos_z[j*2] = pos_z[j*2] + walk_z[i][0];
+      double leg_l = leg_length(pos_x[j*2], pos_y[j*2]);
+      double h_f = hf(leg_l, pos_z[j*2]);
+      double a_1 = a1(leg_l, pos_z[j*2]);
+      double a_2 = a2(h_f);
+      double f_ang = 90.0-(a_1+a_2);
+      double b_1 = b1(h_f);
+      double t_ang = 90.0-b_1;
+      double c_ang = atan(1.0*pos_x[j*2]/pos_y[j*2]);
+      servoAngles[j*6] = c_ang;
+      servoAngles[j*6+1] = f_ang;
+      servoAngles[j*6+2] = t_ang;
+
+      // leg set 2
+      pos_x[j*2+1] = pos_x[j*2+1] + walk_x[i][1];
+      pos_y[j*2+1] = pos_y[j*2+1] + walk_y[i][1];
+      pos_z[j*2+1] = pos_z[j*2+1] + walk_z[i][1];
+      leg_l = leg_length(pos_x[j*2+1], pos_y[j*2+1]);
+      h_f = hf(leg_l, pos_z[j*2+1]);
+      a_1 = a1(leg_l, pos_z[j*2+1]);
+      a_2 = a2(h_f);
+      f_ang = 90.0-(a_1+a_2);
+      b_1 = b1(h_f);
+      t_ang = 90.0-b_1;
+      c_ang = atan(1.0*pos_x[j*2+1]/pos_y[j*2+1]);
+      servoAngles[(j+1)*6] = c_ang;
+      servoAngles[(j+1)*6+1] = f_ang;
+      servoAngles[(j+1)*6+2] = t_ang;
     }
-
-
-    // moveFemur1(up, dist);
-    // moveCoxa1(back, dist);
-    // moveCoxa2(forward, dist);
-    // delay(delayTime);
-
-    // moveFemur1(down, dist);
-    // delay(delayTime);
-
-    // moveFemur2(up, dist);
-    // moveCoxa2(back, dist);
-    // moveCoxa1(forward, dist);
-    // delay(delayTime);
-
-    // moveFemur2(down, dist);
-    // delay(delayTime);
-
-  #elif HDServoMode == 20
-    // for testing
-  #endif
-}
-
-void moveFemur1(int direction, int distance)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[femur1[i]] = servoAngles[femur1[i]] + femur1dir[i]*direction*distance;
-      ServoMoveAngle(femur1[i], servoAngles[femur1[i]], delayTime);
-    }
-}
-
-void moveFemur2(int direction, int distance)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[femur2[i]] = servoAngles[femur2[i]] + femur2dir[i]*direction*distance;
-      ServoMoveAngle(femur2[i], servoAngles[femur2[i]], delayTime);
-    }
-}
-
-void moveCoxa1(int direction, int distance)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[coxa1[i]] = servoAngles[coxa1[i]] + coxa1dir[i]*direction*distance;
-      ServoMoveAngle(coxa1[i], servoAngles[coxa1[i]], delayTime);
-    }
-}
-
-void moveCoxa2(int direction, int distance)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[coxa2[i]] = servoAngles[coxa2[i]] + coxa2dir[i]*direction*distance;
-      ServoMoveAngle(coxa2[i], servoAngles[coxa2[i]], delayTime);
-    }
-}
-
-void moveTibia1(int direction, int distance)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[coxa1[i]] = servoAngles[coxa1[i]] + coxa1dir[i]*direction*distance;
-      ServoMoveAngle(coxa1[i], servoAngles[coxa1[i]], delayTime);
-    }
-}
-
-void moveTibia2(int direction, int distance)
-{
-    for(int i = 0; i < 3 ; i++)
-    {
-      servoAngles[coxa2[i]] = servoAngles[coxa2[i]] + coxa2dir[i]*direction*distance;
-      ServoMoveAngle(coxa2[i], servoAngles[coxa2[i]], delayTime);
-    }
+    moveAllServos(stepTime);
+  }
 }
 
 void OneByOne(char input) 

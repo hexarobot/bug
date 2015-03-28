@@ -47,3 +47,7 @@
 
 Some more links: 
 http://lab.polygonal.de/?p=205
+
+Rotation matrix intro 
+https://www.youtube.com/watch?v=cUv-5unQxtE
+http://ncalculators.com/matrix/3x3-matrix-multiplication-calculator.htm
