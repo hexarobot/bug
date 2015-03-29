@@ -87,12 +87,19 @@
 #define HDServoMode 18
 #define SerialInterfaceSpeed 115200    // Serial interface Speed
 
-static unsigned int iCount;
-static volatile uint8_t *OutPortTable[20] = {&PORTD,&PORTD,&PORTD,&PORTD,&PORTD,&PORTD,&PORTB,&PORTB,&PORTB,&PORTB,&PORTB,&PORTB,&PORTC,&PORTC,&PORTC,&PORTC,&PORTC,&PORTC,&PORTD,&PORTD};
-static uint8_t OutBitTable[20] = {4,8,16,32,64,128,1,2,4,8,16,32,1,2,4,8,16,32,1,2};
+static volatile uint8_t *OutPortTable[20] = {&PORTD,&PORTD, &PORTD,&PORTC,
+											 &PORTD,&PORTE, &PORTB,&PORTB,
+											 &PORTB,&PORTB, &PORTD,&PORTC,
+											 &PORTF,&PORTF, &PORTF,&PORTF,
+											 &PORTF,&PORTF};
+static uint8_t OutBitTable[20] = {	2,1,16,64,
+									128,64,16,32,
+									64,128,64,128,
+									128,64,32,16,
+									2,1};
 static unsigned int ServoPW[20] = {24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000,24000};
 static byte ServoInvert[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static byte Timer2Toggle;
+static byte Timer0Toggle;
 static volatile uint8_t *OutPort1A = &PORTD;
 static volatile uint8_t *OutPort1B = &PORTB;
 static uint8_t OutBit1A = 4;
@@ -115,7 +122,6 @@ static int ServoGroupNbOfChannels = 0;
 
 static char SerialIn;
 static char input;
-static int SerialCommand = 0; //0= none, 1 = '#' and so on...
 static long SerialNumbers[10];
 static int SerialNumbersLength = 0;
 static boolean FirstSerialChannelAfterCR = 1;
@@ -653,7 +659,7 @@ void ServoGroupMoveActivate()                       //ServoMove used by serial c
 
 void RealTime50Hz() //Move servos every 20ms to the desired position.
 {
-	if(SerialNbOfCharToSend) {SerialNbOfCharToSend--; Serial.print(SerialCharToSend[SerialNbOfCharToSend]);}
+	if(SerialNbOfCharToSend) { SerialNbOfCharToSend--; Serial.print(SerialCharToSend[SerialNbOfCharToSend]);}
 	for(ChannelCount = 0; ChannelCount < 20; ChannelCount++)
 	{
 		if(StepsToGo[ChannelCount] > 0)
@@ -679,38 +685,36 @@ ISR(TIMER1_COMPB_vect) // Interrupt routine for timer 1 compare A. Used for timi
 	*OutPort1B &= ~OutBit1B;                //Pulse B finished. Set to low
 }
 
-ISR(TIMER2_COMPA_vect) // Interrupt routine for timer 2 compare A. Used for timing 50Hz for each servo.
+ISR(TIMER0_COMPA_vect) // Interrupt routine for timer 0 compare A. Used for timing 50Hz for each servo.
 {
 	*OutPortNext1A |= OutBitNext1A;         // Start new pulse on next servo. Write pin HIGH
 	*OutPortNext1B |= OutBitNext1B;         // Start new pulse on next servo. Write pin HIGH
 }
 
-ISR(TIMER2_COMPB_vect) // Interrupt routine for timer 2 compare A. Used for timing 50Hz for each servo.
+ISR(TIMER0_COMPB_vect) // Interrupt routine for timer 0 compare A. Used for timing 50Hz for each servo.
 {
 	TIFR1 = 255;                                       // Clear  pending interrupts
 	TCNT1 = 0;                                         // Restart counter for timer1
-	TCNT2 = 0;                                         // Restart counter for timer2
+	TCNT0 = 0;                                         // Restart counter for timer0
 	sei();
 	*OutPort1A &= ~OutBit1A;                           // Set pulse low to if not done already
 	*OutPort1B &= ~OutBit1B;                           // Set pulse low to if not done already
-	OutPort1A = OutPortTable[Timer2Toggle];            // Temp port for COMP1A
-	OutBit1A = OutBitTable[Timer2Toggle];              // Temp bitmask for COMP1A
-	OutPort1B = OutPortTable[Timer2Toggle+10];         // Temp port for COMP1B
-	OutBit1B = OutBitTable[Timer2Toggle+10];           // Temp bitmask for COMP1B
-	if(ServoInvert[Timer2Toggle]) OCR1A = 48000 - ServoPW[Timer2Toggle] - 7985;                // Set timer1 count for pulse width.
-	else OCR1A = ServoPW[Timer2Toggle]-7980;
-	if(ServoInvert[Timer2Toggle+10]) OCR1B = 48000 - ServoPW[Timer2Toggle+10]-7970;            // Set timer1 count for pulse width.
-	else OCR1B = ServoPW[Timer2Toggle+10]-7965;
-	Timer2Toggle++;                                    // Next servo in line.
-	if(Timer2Toggle==10)
+	OutPort1A = OutPortTable[Timer0Toggle];            // Temp port for COMP1A
+	OutBit1A = OutBitTable[Timer0Toggle];              // Temp bitmask for COMP1A
+	OutPort1B = OutPortTable[Timer0Toggle+10];         // Temp port for COMP1B
+	OutBit1B = OutBitTable[Timer0Toggle+10];           // Temp bitmask for COMP1B
+	OCR1A = ServoPW[Timer0Toggle]-7980;
+	OCR1B = ServoPW[Timer0Toggle+10]-7965;
+	Timer0Toggle++;                                    // Next servo in line.
+	if(Timer0Toggle==10)
 	{
-		Timer2Toggle = 0;                                // If next servo is grater than 9, start on 0 again.
+		Timer0Toggle = 0;                                // If next servo is grater than 9, start on 0 again.
 		RealTime50Hz();                                  // Do servo management
 	}
-	OutPortNext1A = OutPortTable[Timer2Toggle];        // Next Temp port for COMP1A
-	OutBitNext1A = OutBitTable[Timer2Toggle];          // Next Temp bitmask for COMP1A
-	OutPortNext1B = OutPortTable[Timer2Toggle+10];     // Next Temp port for COMP1B
-	OutBitNext1B = OutBitTable[Timer2Toggle+10];       // Next Temp bitmask for COMP1B
+	OutPortNext1A = OutPortTable[Timer0Toggle];        // Next Temp port for COMP1A
+	OutBitNext1A = OutBitTable[Timer0Toggle];          // Next Temp bitmask for COMP1A
+	OutPortNext1B = OutPortTable[Timer0Toggle+10];     // Next Temp port for COMP1B
+	OutBitNext1B = OutBitTable[Timer0Toggle+10];       // Next Temp bitmask for COMP1B
 }
 
 void ServoSetup()
@@ -721,26 +725,22 @@ void ServoSetup()
 	TCNT1 = 0;                      // Clear timer count
 	TIFR1 = 255;                    // Clear  pending interrupts
 	TIMSK1 = 6;                     // Enable the output compare A and B interrupt
-	// Timer 2 setup(8 bit):
-	TCCR2A = 0;                     // Normal counting mode
-	TCCR2B = 6;                     // Set prescaler to 256
-	TCNT2 = 0;                      // Clear timer count
-	TIFR2 = 255;                    // Clear pending interrupts
-	TIMSK2 = 6;                     // Enable the output compare A and B interrupt
-	OCR2A = 93;                     // Set counter A for about 500us before counter B below;
-	OCR2B = 124;                    // Set counter B for about 2000us (20ms/10, where 20ms is 50Hz);
+	// Timer 0 setup(8 bit):
+	TCCR0A = 0;                     // Normal counting mode
+	TCCR0B = 4;                     // Set prescaler to 256
+	TCNT0 = 0;                      // Clear timer count
+	TIFR0 = 255;                    // Clear pending interrupts
+	TIMSK0 = 6;                     // Enable the output compare A and B interrupt
+//	OCR0A = 93;                     // Set counter A for about 500us before counter B below;
+//	OCR0B = 124;                    // Set counter B for about 2000us (20ms/10, where 20ms is 50Hz);
 
-#if HDServoMode == 18
-	for(iCount=2;iCount<14;iCount++) pinMode(iCount, OUTPUT);    // Set all pins used to output:
+	for(int iCount=2;iCount<14;iCount++) pinMode(iCount, OUTPUT);    // Set all pins used to output:
 	OutPortTable[18] = &PORTC;    // In 18 channel mode set channel 18 and 19 to a dummy pin that does not exist.
 	OutPortTable[19] = &PORTC;
 	OutBitTable[18] = 128;
 	OutBitTable[19] = 128;
 	Serial.begin(SerialInterfaceSpeed);
 	SerialNbOfCharToSend = 28;
-#elif HDServoMode == 20
-	for(iCount=0;iCount<14;iCount++) pinMode(iCount, OUTPUT);    // Set all pins used to output:
-#endif
-	DDRC = 63;                      //Set analog pins A0 - A5 as digital output also.
+	DDRF = 63;                      //Set analog pins A0 - A5 as digital output also.
 }
 
