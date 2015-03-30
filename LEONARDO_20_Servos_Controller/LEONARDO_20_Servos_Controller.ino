@@ -288,7 +288,7 @@ static const uint16_t FEMUR_LENGTH_SQ = FEMUR_LENGTH*FEMUR_LENGTH;
 static const uint16_t TIBIA_LENGTH_SQ = TIBIA_LENGTH*TIBIA_LENGTH;
 
 // Servo and servo angle arrays
-//static double servoAngles[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
+static double servoAnglesOld[18] = {101,129,30,   93,128,33,   108,109,38,   102,60,143,   92,57,148,   90,50,150};
 static double servoAngles[18] = {0,43,-36,
 								0,42,-36,
 								0,38,-32,
@@ -434,17 +434,14 @@ void setup()
 	{
 		servoAngles[i] = 0;
 	}
-	moveAllServos(500);
-	delay(1000);
-	Serial.println();
-	Serial.println();
-	Serial.println();
+//	moveAllServos(500);
+//	delay(1000);
 
 	for(int i = 0; i < 2 ; i++)
 	{
-		moveLegSet(i, SET_1, true);
+//		moveLegSet(i, SET_1, true);
 	}
-	moveAllServos(stepTime);
+//	moveAllServos(stepTime);
 }
 
 void loop()
@@ -455,10 +452,20 @@ void loop()
 	}
 	for(int i = 0; i < 4 ; i++) // 4 steps per cycle
 	{
-		moveLegSet(i+2, SET_1, true);
-		moveLegSet(i, SET_2, true);
-		moveAllServos(stepTime);
+//		moveLegSet(i+2, SET_1, true);
+//		moveLegSet(i, SET_2, true);
+//		moveAllServos(stepTime);
 	}
+	for(int i = 0; i < 18 ; i++)
+	{
+		ServoMoveAngle(i, servoAnglesOld[i], 500);
+	}
+	delay(500);
+	for(int i = 0; i < 18 ; i++)
+	{
+		ServoMoveAngle(i, servoAngles[i], 500);
+	}
+	delay(500);
 }
 
 void moveLegSet(int stepNum, int side, int walk)
@@ -685,17 +692,17 @@ ISR(TIMER1_COMPB_vect) // Interrupt routine for timer 1 compare A. Used for timi
 	*OutPort1B &= ~OutBit1B;                //Pulse B finished. Set to low
 }
 
-ISR(TIMER0_COMPA_vect) // Interrupt routine for timer 0 compare A. Used for timing 50Hz for each servo.
+ISR(TIMER3_COMPA_vect) // Interrupt routine for timer 0 compare A. Used for timing 50Hz for each servo.
 {
 	*OutPortNext1A |= OutBitNext1A;         // Start new pulse on next servo. Write pin HIGH
 	*OutPortNext1B |= OutBitNext1B;         // Start new pulse on next servo. Write pin HIGH
 }
 
-ISR(TIMER0_COMPB_vect) // Interrupt routine for timer 0 compare A. Used for timing 50Hz for each servo.
+ISR(TIMER3_COMPB_vect) // Interrupt routine for timer 0 compare A. Used for timing 50Hz for each servo.
 {
 	TIFR1 = 255;                                       // Clear  pending interrupts
 	TCNT1 = 0;                                         // Restart counter for timer1
-	TCNT0 = 0;                                         // Restart counter for timer0
+	TCNT3 = 0;                                         // Restart counter for timer0
 	sei();
 	*OutPort1A &= ~OutBit1A;                           // Set pulse low to if not done already
 	*OutPort1B &= ~OutBit1B;                           // Set pulse low to if not done already
@@ -726,13 +733,13 @@ void ServoSetup()
 	TIFR1 = 255;                    // Clear  pending interrupts
 	TIMSK1 = 6;                     // Enable the output compare A and B interrupt
 	// Timer 0 setup(8 bit):
-	TCCR0A = 0;                     // Normal counting mode
-	TCCR0B = 4;                     // Set prescaler to 256
-	TCNT0 = 0;                      // Clear timer count
-	TIFR0 = 255;                    // Clear pending interrupts
-	TIMSK0 = 6;                     // Enable the output compare A and B interrupt
-//	OCR0A = 93;                     // Set counter A for about 500us before counter B below;
-//	OCR0B = 124;                    // Set counter B for about 2000us (20ms/10, where 20ms is 50Hz);
+	TCCR3A = 0;                     // Normal counting mode
+	TCCR3B = 4;                     // Set prescaler to 256
+	TCNT3 = 0;                      // Clear timer count
+	TIFR3 = 255;                    // Clear pending interrupts
+	TIMSK3 = 6;                     // Enable the output compare A and B interrupt
+	OCR3A = 93;                     // Set counter A for about 500us before counter B below;
+	OCR3B = 124;                    // Set counter B for about 2000us (20ms/10, where 20ms is 50Hz);
 
 	for(int iCount=2;iCount<14;iCount++) pinMode(iCount, OUTPUT);    // Set all pins used to output:
 	OutPortTable[18] = &PORTC;    // In 18 channel mode set channel 18 and 19 to a dummy pin that does not exist.
