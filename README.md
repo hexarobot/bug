@@ -1,3 +1,7 @@
+### HEXABUG
+
+3D printed spider robot with 6 legs. Firmware is compatible with Atmega328 and Atmega32u4 based microcontrollers.
+
 ### **Based on** http://www.lamja.com/?p=504
 
 ### Design scaled from http://www.thingiverse.com/thing:5669 for using with 9g servos
